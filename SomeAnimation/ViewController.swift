@@ -12,6 +12,10 @@ import UIKit
 class ViewController: UIViewController {
     @IBOutlet weak var sdIconImageView: CustomImageView!
     
+    var radius: CGFloat = 1
+    var degrees: CGFloat = 90.0
+    var animationTimer: Timer?
+    
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
@@ -26,7 +30,7 @@ class ViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        let radius = self.view.frame.centerOrigin.x / 2
+        radius = view.frame.centerOrigin.x / 2
         
         UIView.animateKeyframes(withDuration: 2.5, delay: 0, options: [], animations: {
             // Fade in
@@ -36,9 +40,35 @@ class ViewController: UIViewController {
 
             // Slide up
             UIView.addKeyframe(withRelativeStartTime: 0.4, relativeDuration: 0.6) {
-                self.sdIconImageView.position = CGPoint(x: self.sdIconImageView.position.x, y: radius)
+                self.sdIconImageView.position = CGPoint(x: self.sdIconImageView.position.x, y: self.radius)
             }
-        })
+        }) { _ in
+            self.animationTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
+                let radians = self.degrees * CGFloat(Double.pi / 180)
+                let position = CGPoint(x: self.radius * cos(radians), y: self.radius * sin(radians))
+                var transform = CGAffineTransform.identity
+                
+                self.sdIconImageView.position = CGPoint(x: position.x, y: position.y)
+                
+                if self.degrees >= 180 && self.degrees < 270 {
+                    // Normalization represents progress from 180 to 270
+                    let progress = (self.degrees - 180) / (269 - 180)
+                    let scaling = 1 - 0.5 * progress
+                    transform = transform.scaledBy(x: scaling, y: scaling)
+                } else if self.degrees >= 270 && self.degrees < 360 {
+                    let progress = (self.degrees - 270) / (359 - 270)
+                    let scaling = 0.5 + 0.5 * progress
+                    transform = transform.scaledBy(x: scaling, y: scaling)
+                }
+                
+                self.sdIconImageView.transform = transform
+                
+                self.degrees += 1
+                if self.degrees >= 360 {
+                    self.degrees = 0.0
+                }
+            }
+        }
     }
 }
 
