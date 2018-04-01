@@ -12,10 +12,6 @@ import UIKit
 class ViewController: UIViewController {
     @IBOutlet weak var sdIconImageView: CustomImageView!
     
-    var radius: Double = 1
-    var degrees: Double = 90
-    var animationTimer: Timer?
-    
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
@@ -23,14 +19,21 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Start at origin of superview
         sdIconImageView.position = CGPoint.zero
+        // Start transparently
         sdIconImageView.alpha = 0.0
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        radius = Double(view.frame.centerOrigin.x / 2)
+        // This is the radius of the circle we will be moving around from the center
+        let radius = Double(view.frame.centerOrigin.x / 2)
+        
+        // Since we animate a slide up by radius amount, we know that we will be at
+        // sin(90) * radius == 1 * radius
+        var degrees = 90.0
         
         UIView.animateKeyframes(withDuration: 2.5, delay: 0, options: [], animations: {
             // Fade in
@@ -40,29 +43,29 @@ class ViewController: UIViewController {
 
             // Slide up
             UIView.addKeyframe(withRelativeStartTime: 0.4, relativeDuration: 0.6) {
-                //self.sdIconImageView.position = CGPoint(x: Double(self.sdIconImageView.position.x), y: self.radius)
-                self.sdIconImageView.transform = self.sdIconImageView.transform.translatedBy(x: 0, y: CGFloat(-self.radius))
+                self.sdIconImageView.transform = self.sdIconImageView.transform.translatedBy(x: 0, y: CGFloat(-radius))
             }
         }){ _ in
 
-            // Main animation
-            self.animationTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
-                let radians = self.degrees * Double.pi / 180
-                let position = CGPoint(x: self.radius * cos(radians), y: self.radius * sin(radians))
+            // Main animation moving the center of image around a circle
+            // defined by trigonemetric function sin(x) + cos(x) = radius.
+            // Performing a rotation, and scale.
+            let _ = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
+                let radians = degrees * Double.pi / 180
+                let position = CGPoint(x: radius * cos(radians), y: radius * sin(radians))
                 var transform = CGAffineTransform.identity
                 
-                //self.sdIconImageView.position = CGPoint(x: position.x, y: position.y)
-                transform = transform.translatedBy(x: -position.x, y: -position.y)
+                transform = transform.translatedBy(x: position.x, y: -position.y)
                 
-                if self.degrees >= 180 && self.degrees < 270 {
-                    // Normalization represents progress from 180 to 270
-                    let progress = (self.degrees - 180) / (269 - 180)
-                    let scaling = 1 - 0.5 * progress
+                if degrees >= 180 && degrees < 270 {
+                    // Normalization represents progress from 180 to 270 (this will be a value between 0 and 1)
+                    let progress = (degrees - 180) / (269 - 180)
+                    let scaling = 1 - 0.5 * progress // We want to shrink to half size but only by a multiplier of progress
                     transform = transform.scaledBy(x: CGFloat(scaling), y: CGFloat(scaling))
-                } else if self.degrees >= 270 && self.degrees < 360 {
-                    let progress = (self.degrees - 270) / (359 - 270)
-                    let scaling = 0.5 + 0.5 * progress
-                    let rotation = 2 * Double.pi * progress
+                } else if degrees >= 270 && degrees < 360 {
+                    let progress = (degrees - 270) / (359 - 270)
+                    let scaling = 0.5 + 0.5 * progress // We want to grow from half size back to full size (by progress)
+                    let rotation = 2 * Double.pi * progress // Will perform 360 == 2 * 180 = 2 * 3.14 rotation (by progress)
 
                     transform = transform.rotated(by: CGFloat(rotation))
                     transform = transform.scaledBy(x: CGFloat(scaling), y: CGFloat(scaling))
@@ -70,9 +73,9 @@ class ViewController: UIViewController {
                 
                 self.sdIconImageView.transform = transform
                 
-                self.degrees += 1
-                if self.degrees >= 360 {
-                    self.degrees = 0.0
+                degrees += 1
+                if degrees >= 360 {
+                    degrees = 0.0
                 }
             }
         }
