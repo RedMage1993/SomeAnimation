@@ -12,8 +12,8 @@ import UIKit
 class ViewController: UIViewController {
     @IBOutlet weak var sdIconImageView: CustomImageView!
     
-    var radius: CGFloat = 1
-    var degrees: CGFloat = 90.0
+    var radius: Double = 1
+    var degrees: Double = 90
     var animationTimer: Timer?
     
     required init?(coder aDecoder: NSCoder) {
@@ -24,41 +24,48 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         sdIconImageView.position = CGPoint.zero
-        sdIconImageView.alpha = 0
+        sdIconImageView.alpha = 0.0
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        radius = view.frame.centerOrigin.x / 2
+        radius = Double(view.frame.centerOrigin.x / 2)
         
         UIView.animateKeyframes(withDuration: 2.5, delay: 0, options: [], animations: {
             // Fade in
             UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 0.4) {
-                self.sdIconImageView.alpha = 1
+                self.sdIconImageView.alpha = 1.0
             }
 
             // Slide up
             UIView.addKeyframe(withRelativeStartTime: 0.4, relativeDuration: 0.6) {
-                self.sdIconImageView.position = CGPoint(x: self.sdIconImageView.position.x, y: self.radius)
+                //self.sdIconImageView.position = CGPoint(x: Double(self.sdIconImageView.position.x), y: self.radius)
+                self.sdIconImageView.transform = self.sdIconImageView.transform.translatedBy(x: 0, y: CGFloat(-self.radius))
             }
-        }) { _ in
+        }){ _ in
+
+            // Main animation
             self.animationTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
-                let radians = self.degrees * CGFloat(Double.pi / 180)
+                let radians = self.degrees * Double.pi / 180
                 let position = CGPoint(x: self.radius * cos(radians), y: self.radius * sin(radians))
                 var transform = CGAffineTransform.identity
                 
-                self.sdIconImageView.position = CGPoint(x: position.x, y: position.y)
+                //self.sdIconImageView.position = CGPoint(x: position.x, y: position.y)
+                transform = transform.translatedBy(x: -position.x, y: -position.y)
                 
                 if self.degrees >= 180 && self.degrees < 270 {
                     // Normalization represents progress from 180 to 270
                     let progress = (self.degrees - 180) / (269 - 180)
                     let scaling = 1 - 0.5 * progress
-                    transform = transform.scaledBy(x: scaling, y: scaling)
+                    transform = transform.scaledBy(x: CGFloat(scaling), y: CGFloat(scaling))
                 } else if self.degrees >= 270 && self.degrees < 360 {
                     let progress = (self.degrees - 270) / (359 - 270)
                     let scaling = 0.5 + 0.5 * progress
-                    transform = transform.scaledBy(x: scaling, y: scaling)
+                    let rotation = 2 * Double.pi * progress
+
+                    transform = transform.rotated(by: CGFloat(rotation))
+                    transform = transform.scaledBy(x: CGFloat(scaling), y: CGFloat(scaling))
                 }
                 
                 self.sdIconImageView.transform = transform
@@ -87,13 +94,13 @@ extension CGRect {
 }
 
 extension CGAffineTransform {
-    func rotated(byDegrees degrees: CGFloat) -> CGAffineTransform {
-        return self.rotated(by: degrees * CGFloat(Double.pi / 180))
+    func rotated(byDegrees degrees: Double) -> CGAffineTransform {
+        return self.rotated(by: CGFloat(degrees * (Double.pi / 180.0)))
     }
     
-    var rotationInDegrees: CGFloat {
+    var rotationInDegrees: Double {
         get {
-            return CGFloat(atan2f(Float(self.b), Float(self.a))) * CGFloat(180 / Double.pi)
+            return atan2(Double(self.b), Double(self.a)) * (180.0 / Double.pi)
         }
     }
 }
@@ -136,7 +143,7 @@ class CustomImageView: UIImageView {
     }
     
     @IBInspectable
-    var rotationInDegrees: CGFloat {
+    var rotationInDegrees: Double {
         get {
             return transform.rotationInDegrees
         }
